@@ -6,6 +6,8 @@
 //  Copyright © 2016 Instacart. All rights reserved.
 //
 
+import CTrueTime
+
 struct NTPConfig {
     let timeout: TimeInterval
     let maxRetries: Int
@@ -20,17 +22,24 @@ final class NTPClient {
     init(config: NTPConfig) {
         self.config = config
     }
+    
+    var isStated: Bool = false
 
     func start(pool: [String], port: Int) {
         precondition(!pool.isEmpty, "Must include at least one pool URL")
-        queue.async {
-            precondition(self.reachability.callback == nil, "Already started")
-            self.pool = pool
-            self.port = port
-            self.reachability.callbackQueue = self.queue
-            self.reachability.callback = self.updateReachability
-            self.reachability.startMonitoring()
-            self.startTimer()
+        if (!isStated) {
+            queue.async {
+                precondition(self.reachability.callback == nil, "Already started")
+                self.pool = pool
+                self.port = port
+                self.reachability.callbackQueue = self.queue
+                self.reachability.callback = self.updateReachability
+                self.reachability.startMonitoring()
+                self.startTimer()
+            }
+            isStated = true
+        } else {
+            print("ALREADY STARTED")
         }
     }
 
@@ -41,6 +50,7 @@ final class NTPClient {
             self.reachability.callback = nil
             self.stopQueue()
         }
+        isStated = false
     }
 
     func fetchIfNeeded(queue callbackQueue: DispatchQueue,
